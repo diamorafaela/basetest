@@ -20,6 +20,8 @@ def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_r
     data = {"title": pr_data["title"], "body": pr_data["body"] or "-", "head": pr_data['head']['label'], "base": pr_data["base"]["ref"]}
     
     response = requests.post(url, json=data, headers=headers)
+    print(f"Response status code: {response.status_code}")
+    print(f"Response body: {response.text}")
     response.raise_for_status()
     return response.json()
 
