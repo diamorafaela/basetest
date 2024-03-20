@@ -12,6 +12,7 @@ def get_open_pull_requests(base_repo_owner, base_repo_name, github_token):
 def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_repo_name, pr_data, github_token):
     # Fetch pull request details from the base repository
     pr_url = pr_data['url']
+    pr_number = pr_data['number']
     headers = {
         "Authorization": f"Bearer {github_token}",
         "Accept": "application/vnd.github.v3+json"
