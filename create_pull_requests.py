@@ -10,7 +10,6 @@ def get_open_pull_requests(base_repo_owner, base_repo_name, github_token):
     return response.json()
 
 def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_repo_name, pr_data, github_token):
-def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_repo_name, pr_number, github_token):
     # Fetch pull request details from the base repository
     pr_url = pr_data['url']
     headers = {
