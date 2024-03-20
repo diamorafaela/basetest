@@ -33,6 +33,9 @@ def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_r
         "sha": commit_sha
     }
     response = requests.post(new_branch_url, json=data, headers=headers)
+    # Print or log the response content for debugging
+    print(f"Response status code: {response.status_code}")
+    print(f"Response body: {response.text}")
     response.raise_for_status()
 
     # Create the pull request in the forked repository
