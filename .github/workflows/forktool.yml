@@ -29,4 +29,4 @@ jobs:
           FORK_REPO_NAME: basetest
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python create_pull_requests.py
+          python ./create_pull_requests.py
