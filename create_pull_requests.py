@@ -15,9 +15,9 @@ def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_r
     default_branch_url = f"https://api.github.com/repos/{fork_repo_owner}/{fork_repo_name}"
     default_branch_response = requests.get(default_branch_url, headers=headers)
     default_branch_response.raise_for_status()
-    default_branch = default_branch_response.json()["default_branch"]
+    default_branch = default_branch_response.json()["default_branch"]  # todo use for base, configurable
     
-    data = {"title": pr_data["title"], "body": pr_data["body"], "head": pr_data['head']['label'], "base": pr_data["base"]["ref"]}
+    data = {"title": pr_data["title"], "body": pr_data["body"] or "-", "head": pr_data['head']['label'], "base": pr_data["base"]["ref"]}
     
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
