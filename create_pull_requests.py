@@ -30,6 +30,7 @@ def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_r
     response = requests.post(create_branch_url, json=create_branch_payload, headers=headers)
     if response.status_code != 201:
         print("Failed to create branch in the forked repository.")
+        print(response.content)
         return
 
     # Cherry-pick all commits from the base branch
@@ -41,6 +42,7 @@ def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_r
     response = requests.post(cherry_pick_url, json=cherry_pick_payload, headers=headers)
     if response.status_code != 201:
         print("Failed to cherry-pick commits.")
+        print(response.content)
         return
     new_commit_sha = response.json()["sha"]
 
@@ -52,6 +54,7 @@ def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_r
     response = requests.patch(update_branch_url, json=update_branch_payload, headers=headers)
     if response.status_code != 200:
         print("Failed to update branch reference.")
+        print(response.content)
         return
 
     # Create pull request
