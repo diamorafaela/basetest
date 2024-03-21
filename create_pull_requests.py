@@ -10,62 +10,78 @@ def get_open_pull_requests(base_repo_owner, base_repo_name, github_token):
     response.raise_for_status()
     return response.json()
 
-
 def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_repo_name, pr_data, github_token):
     base_branch = pr_data["base"]["ref"]
     fork_branch = f'{base_branch}_replica'
-    # Clone the forked repository
-    subprocess.run(['git', 'clone', f'https://github.com/{fork_repo_owner}/{fork_repo_name}.git'])
-
-    # Change directory to the cloned repository
-    subprocess.run(['cd', fork_repo_name])
-
-    # Add base repository as remote
-    subprocess.run(['git', 'remote', 'add', 'base', f'https://github.com/{base_repo_owner}/{base_repo_name}.git'])
-
-    # Fetch changes from the base repository
-    subprocess.run(['git', 'fetch', 'base'])
+    # Define API endpoints
+    base_url = f"https://api.github.com/repos/{base_repo_owner}/{base_repo_name}"
+    fork_url = f"https://api.github.com/repos/{fork_repo_owner}/{fork_repo_name}"
 
     # Create a new branch in the forked repository
-    subprocess.run(['git', 'checkout', '-b', fork_branch])
+    create_branch_url = f"{fork_url}/git/refs"
+    create_branch_payload = {
+        "ref": f"refs/heads/{fork_branch}",
+        "sha": get_branch_sha(base_repo_owner, base_repo_name, base_branch, github_token)
+    }
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    response = requests.post(create_branch_url, json=create_branch_payload, headers=headers)
+    if response.status_code != 201:
+        print("Failed to create branch in the forked repository.")
+        return
 
     # Cherry-pick all commits from the base branch
-    subprocess.run(['git', 'cherry-pick', f'base/{base_branch}'])
+    cherry_pick_url = f"{fork_url}/git/commits"
+    cherry_pick_payload = {
+        "parents": [get_branch_sha(fork_repo_owner, fork_repo_name, fork_branch, github_token)],
+        "tree": get_branch_sha(base_repo_owner, base_repo_name, base_branch, github_token)
+    }
+    response = requests.post(cherry_pick_url, json=cherry_pick_payload, headers=headers)
+    if response.status_code != 201:
+        print("Failed to cherry-pick commits.")
+        return
+    new_commit_sha = response.json()["sha"]
 
-    # Push changes to the forked repository
-    subprocess.run(['git', 'push', 'origin', fork_branch])
+    # Update the new branch reference
+    update_branch_url = f"{fork_url}/git/refs/heads/{fork_branch}"
+    update_branch_payload = {
+        "sha": new_commit_sha
+    }
+    response = requests.patch(update_branch_url, json=update_branch_payload, headers=headers)
+    if response.status_code != 200:
+        print("Failed to update branch reference.")
+        return
 
-    # Create pull request in the forked repository
-    # subprocess.run(['gh', 'pr', 'create', '--base', base_branch, '--head', fork_branch, '--title', 'Pull Request Title', '--body', 'Pull Request Body'])
-    # Create pull request using GitHub API
-    pull_request_data = {
+    # Create pull request
+    create_pr_url = f"{base_url}/pulls"
+    create_pr_payload = {
         "title": "Pull Request Title",
         "body": "Pull Request Body",
         "head": f"{fork_repo_owner}:{fork_branch}",
         "base": base_branch
     }
+    response = requests.post(create_pr_url, json=create_pr_payload, headers=headers)
+    if response.status_code != 201:
+        print("Failed to create pull request.")
+        return
 
+    print("Pull request created successfully.")
+
+def get_branch_sha(repo_owner, repo_name, branch, github_token):
+    url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/git/refs/heads/{branch}"
     headers = {
         "Authorization": f"Bearer {github_token}",
         "Accept": "application/vnd.github.v3+json"
     }
-
-    create_pr_url = f"https://api.github.com/repos/{base_repo_owner}/{base_repo_name}/pulls"
-
-    response = requests.post(create_pr_url, json=pull_request_data, headers=headers)
-
-    if response.status_code == 201:
-        print("Pull request created successfully.")
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()["object"]["sha"]
     else:
-        print("Failed to create pull request.")
-        print(f"Response status code: {response.status_code}")
-        print(f"Response text: {response.text}")
-
-    # Cleanup cloned repository
-    subprocess.run(['cd', '..'])
-    subprocess.run(['rm', '-rf', fork_repo_name])
-
-
+        print(f"Failed to fetch SHA for branch {branch}.")
+        return None
+    
 def main():
     base_repo_owner = os.getenv("BASE_REPO_OWNER")
     base_repo_name = os.getenv("BASE_REPO_NAME")
