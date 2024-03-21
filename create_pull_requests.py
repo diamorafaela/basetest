@@ -11,7 +11,7 @@ def get_open_pull_requests(base_repo_owner, base_repo_name, github_token):
     return response.json()
 
 def create_pull_request(base_repo_owner, base_repo_name, fork_repo_owner, fork_repo_name, pr_data, github_token):
-    base_branch = pr_data["base"]["ref"]
+    base_branch = pr_data['head']['ref']
     fork_branch = f'{base_branch}_replica'
     # Define API endpoints
     base_url = f"https://api.github.com/repos/{base_repo_owner}/{base_repo_name}"
